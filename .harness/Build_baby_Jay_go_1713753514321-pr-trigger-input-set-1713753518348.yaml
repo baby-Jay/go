@@ -1,0 +1,14 @@
+inputSet:
+  name: Build_baby_Jay_go_1713753514321-pr-trigger-input-set
+  identifier: Build_baby_Jay_go_1713753514321prtriggerinputset
+  orgIdentifier: default
+  projectIdentifier: default_project
+  pipeline:
+    identifier: Build_baby_Jay_go_1713753514321
+    properties:
+      ci:
+        codebase:
+          build:
+            type: PR
+            spec:
+              number: <+trigger.prNumber>
