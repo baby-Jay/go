@@ -6,60 +6,67 @@ pipeline:
   properties:
     ci:
       codebase:
+        connectorRef: <+input>
+        repoName: go-pipeline-sample
         build: <+input>
-        connectorRef: account.Github_OAuth_1713739668868
-        repoName: baby-Jay/go
   stages:
     - stage:
-        identifier: build
-        name: build
+        name: "build test and run "
+        identifier: build_test_and_run
+        description: ""
+        type: CI
         spec:
-          caching:
-            enabled: true
           cloneCodebase: true
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
           execution:
             steps:
               - step:
-                  identifier: gobuild
-                  name: go_build
-                  spec:
-                    command: go build
-                  timeout: ""
                   type: Run
-              - step:
-                  identifier: gotestcoverage
-                  name: go_test_coverage
+                  name: run unit test
+                  identifier: run_unit_test
                   spec:
-                    command: go test -coverprofile=coverage.out ./...
-                  timeout: ""
-                  type: Run
-              - step:
-                  identifier: gotestreport
-                  name: go_test_report
-                  spec:
-                    command: "export GOBIN=/home/harness/go/bin\n\t\texport PATH=/home/harness/go/bin:$PATH\n\t\techo $PATH\n\t\tgo install github.com/jstemmer/go-junit-report/v2@latest\n\t\tgo test -v 2>&1 ./... | go-junit-report -set-exit-code > report.xml"
+                    connectorRef: <+input>
+                    image: golang:1.15
+                    shell: Sh
+                    command: |-
+                      set +e
+                      go get gotest.tools/gotestsum
+                      gotestsum --format=standard-verbose --junitfile unit-tests.xml
+                      exit 0
                     reports:
+                      type: JUnit
                       spec:
                         paths:
-                          - /harness/report.xml
-                      type: JUnit
-                  timeout: ""
-                  type: Run
+                          - "*.xml"
               - step:
-                  identifier: dockerbuild
-                  name: docker_build
+                  type: Run
+                  name: go build
+                  identifier: go_build
                   spec:
-                    caching: true
                     connectorRef: <+input>
-                    repo: hello/world
+                    image: golang:1.15
+                    shell: Sh
+                    command: |-
+                      set +e
+                      go get gotest.tools/gotestsum
+                      CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -tags netgo
+                      exit 0
+              - step:
+                  type: BuildAndPushDockerRegistry
+                  name: Build And Push Docker Registry
+                  identifier: Build_And_Push_Docker_Registry
+                  spec:
+                    connectorRef: <+input>
+                    repo: <+input>
                     tags:
                       - latest
-                  timeout: ""
-                  type: BuildAndPushDockerRegistry
-          platform:
-            arch: Amd64
-            os: Linux
-          runtime:
-            spec: {}
-            type: Cloud
-        type: CI
+        variables:
+          - name: myStageVar
+            type: String
+            description: ""
+            value: stageVarValue
